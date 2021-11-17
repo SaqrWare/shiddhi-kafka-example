@@ -1,0 +1,36 @@
+@App:name("get-ip")
+
+@source(
+type='kafka', 
+topic.list='ip-topic', 
+group.id='test', 
+threading.option='topic.wise', 
+bootstrap.servers='${KAFKA_HOST}', 
+@map(type='json'))
+define stream IPStream (ip string);
+
+
+@sink(type='log', prefix='LOGGER')
+define stream OutputStream(ip string, city string, country string);
+
+@sink(type='http-call',
+    publisher.url='http://ipinfo.io/{{ip}}',
+    method='GET', sink.id='get-ip',
+    @map(type='json'))
+define stream GETIPStream (ip string);
+
+@source(type='http-call-response', sink.id='get-ip',
+    http.status.code='2\d+',
+    @map(type='json', @attributes(ip='ip',city='city', country='country')))
+define stream SuccessRequestStream(ip string, city string, country string);
+
+@info(name = 'get-ip-request')
+from IPStream
+select ip 
+insert into GETIPStream;
+
+@info(name = 'successful-message-generator')
+from SuccessRequestStream
+select ip, city, country
+insert into OutputStream;
+

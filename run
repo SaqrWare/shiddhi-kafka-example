@@ -1,0 +1,3 @@
+docker run -it --net=host \
+-v '/home/omar/Projects/Nana/siddhi-ip/get-ip.siddhi':/apps/get-ip.siddhi \
+siddhi-kafka -Dapps=/apps/get-ip.siddhi
